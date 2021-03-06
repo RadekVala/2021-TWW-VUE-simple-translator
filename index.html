@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-tabs v-model="tab" background-color="deep-purple accent-4" centered dark icons-and-text>
+                    <v-tabs-slider></v-tabs-slider>
+
+                    <v-tab href="#tab-1">
+                        Translate
+                        <v-icon>mdi-earth</v-icon>
+                    </v-tab>
+
+                    <v-tab href="#tab-2">
+                        History
+                        <v-icon>mdi-history</v-icon>
+                    </v-tab>
+                </v-tabs>
+
+                <v-tabs-items v-model="tab">
+                    <v-tab-item value="tab-1">
+                        <v-container>
+                            <v-form ref="form">
+                                <v-row>
+                                    <v-col class="d-flex" cols="12" sm="6">
+
+                                        <v-select v-model="inputLang" :items="languages" label="Input language"
+                                            item-text="name" item-value="code" :rules="rulesSelect"></v-select>
+
+                                    </v-col>
+
+                                    <v-col class="d-flex" cols="12" sm="6">
+
+                                        <v-select :items="languages" label="Output language" v-model="outputLang"
+                                            item-text="name" item-value="code" :rules="rulesSelect"></v-select>
+
+                                    </v-col>
+
+                                </v-row>
+                                <v-row>
+
+                                    <v-col class="d-flex" cols="12">
+                                        <v-text-field v-model="inputPhrase" label="Input phrase" :rules="rulesInput"
+                                            hide-details="auto"></v-text-field>
+                                    </v-col>
+                                </v-row>
+
+                                <v-row>
+                                    <v-col class="d-flex" cols="12">
+                                        <v-btn @click="handleClick" block>
+                                            Translate
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+
+                                <v-row>
+                                    <v-col class="d-flex" cols="12">
+                                        {{ result }}
+                                    </v-col>
+                                </v-row>
+
+
+                            </v-form>
+                        </v-container>
+
+
+                    </v-tab-item>
+
+
+                    <v-tab-item value="tab-2">
+                        <v-container>
+                            <v-list-item v-for="record in history">
+                                <v-list-item-content>
+                                    <v-list-item-title class="text-wrap">
+                                        {{ record.input }} 
+                                        <v-icon>mdi-arrow-right</v-icon> 
+                                        {{ record.output }}
+                                    </v-list-item-title>
+                                </v-list-item-content>
+                            </v-list-item>
+
+
+                        </v-container>
+
+
+                    </v-tab-item>
+                </v-tabs-items>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data: {
+                history: [],
+                inputLang: null,
+                inputPhrase: null,
+                outputLang: null,
+                languages: [
+                    { name: 'Czech', code: 'cs' },
+                    { name: 'German', code: 'de' },
+                    { name: 'English', code: 'en' },
+                ],
+                tab: null,
+                result: null,
+                rulesInput: [
+                    value => !!value || 'Required.',
+                    value => (value && value.length >= 3) || 'Min 3 characters',
+                ],
+                rulesSelect: [
+                    value => !!value || 'Required',
+                ]
+            },
+            methods: {
+                handleClick: function () {
+                    console.log(this.inputPhrase);
+                    if (this.validate()) {
+                        fetch('https://api.mymemory.translated.net/get?q=' + this.inputPhrase + '&langpair=' + this.inputLang + '|' + this.outputLang)
+                            .then(response => response.json())
+                            .then(data => {
+                                this.result = data.responseData.translatedText;
+                                this.history.unshift({
+                                    input: this.inputPhrase,
+                                    output: this.result
+                                });
+                                localStorage.setItem('history', JSON.stringify(this.history));
+
+                            });
+                    }
+                },
+                validate: function () {
+                    return this.$refs.form.validate();
+                },
+            },
+            mounted() {
+                this.inputLang = 'en';
+
+                if(localStorage.getItem('history')){
+                    this.history = JSON.parse(
+                        localStorage.getItem('history')
+                    )
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
